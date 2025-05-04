@@ -1,1 +1,1 @@
-Stream Processing orchestration system that monitoring financial transaction to detect fraud in the spot and notify the client to take action to block the fraudulent actor.
+A stream processing orchestration system designed to monitor financial transactions in real-time, enabling the immediate detection of fraudulent activities. This system ensures rapid identification of potential fraud, promptly notifies clients, and facilitates proactive measures to block malicious actors, thereby enhancing security and mitigating financial risks.
