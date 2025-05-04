@@ -185,7 +185,7 @@ class TransactionProducer():
                 transaction['amount'] = round(random.uniform(100, 500), 2)
                 transaction['transaction_type'] = 'chargeback'
 
-        # geography anomaly
+        # Geography anomaly
         if not is_fraud and merchant_country in self.high_risk_countries:
             if user_id % 500 == 0 and random.random() < 0.01:
                 is_fraud = 1
@@ -201,10 +201,10 @@ class TransactionProducer():
             transaction['amount'] = round(random.uniform(100, 2000), 2)
             # transaction['transaction_type'] = 'purchase'
 
-        # ensure that final fraud rate is between 1 - 2%
+        # Ensure that final fraud rate is between 1 - 2%
         transaction['is_fraud'] = is_fraud if random.random() < 0.985 else 0
 
-        # validate modified transaction
+        # Validate modified transaction
         if self.validate_transaction(transaction):
             return transaction
 
