@@ -1,35 +1,33 @@
 ---
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
   #image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.5}
   build: ./airflow
   image: airflow-training:latest
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
-    AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
     # yamllint enable rule:line-length
-    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # The following line can be used to set a custom config file, stored in the local config folder
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
-    MLFLOW_TRACKING_URI: 'http://mlflow-server:5500'
-    MLFLOW_S3_ENDPOINT_URL: 'http://minio:9000'
+    MLFLOW_TRACKING_URI: "http://mlflow-server:5500"
+    MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
     MLFLOW_EXPERIMENT_NAME: airflow
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
@@ -40,8 +38,7 @@ x-airflow-common:
     - ./config.yml:/app/config.yml
     - ./.env:/app/.env
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
     postgres:
@@ -49,7 +46,7 @@ x-airflow-common:
 
 services:
   postgres:
-    image: postgres:13
+    image: postgres:18
     platform: linux/amd64
     environment:
       POSTGRES_USER: airflow
@@ -57,7 +54,7 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
-      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh    
+      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
@@ -144,8 +141,8 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '1'
-          memory: '2G'
+          cpus: "1"
+          memory: "2G"
       mode: replicated
       replicas: 2
     networks:
@@ -155,7 +152,11 @@ services:
     <<: *airflow-common
     command: triggerer
     healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -223,11 +224,11 @@ services:
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
     user: "0:0"
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
@@ -276,27 +277,27 @@ services:
   # MINIO SERVER
   mc:
     image: minio/minio:latest
-    platform: linux/amd64    
+    platform: linux/amd64
     depends_on:
       - minio
     container_name: mc
     env_file:
       - .env
     entrypoint: >
-     /bin/sh -c "
-     /tmp/wait-for-it.sh minio:9000 && 
-     /usr/bin/mc alias set minio http://minio:9000 ${MINIO_USERNAME} ${MINIO_PASSWORD} &&
-     /usr/bin/mc mb minio/mlflow;
-     exit 0;
-     "
+      /bin/sh -c "
+      /tmp/wait-for-it.sh minio:9000 && 
+      /usr/bin/mc alias set minio http://minio:9000 ${MINIO_USERNAME} ${MINIO_PASSWORD} &&
+      /usr/bin/mc mb minio/mlflow;
+      exit 0;
+      "
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     volumes:
-        - ./wait-for-it.sh:/tmp/wait-for-it.sh
+      - ./wait-for-it.sh:/tmp/wait-for-it.sh
     networks:
       - fraud-detection-net
-  
+
   minio:
     restart: always
     image: minio/minio:latest
@@ -310,12 +311,12 @@ services:
       MINIO_ROOT_USER: ${MINIO_USERNAME}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
-      - minio_data:/data   
-      
+      - minio_data:/data
+
     networks:
       - fraud-detection-net
 
-# MLFLOW
+  # MLFLOW
   mlflow-server:
     restart: always
     build: ./mlflow
@@ -334,11 +335,127 @@ services:
     networks:
       - fraud-detection-net
 
+  # KAFKA - Message Streaming (KRaft mode — no ZooKeeper)
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    restart: always
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      # KRaft: combined broker + controller in a single node (no ZooKeeper required)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_RETENTION_HOURS: 168
+      # Regenerate with: docker run --rm confluentinc/cp-kafka:latest kafka-storage random-uuid
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "localhost:9092",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - fraud-detection-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    restart: always
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: fraud-detection
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      - fraud-detection-net
+
+  # TRANSACTION PRODUCER
+  producer:
+    build: ./producer
+    container_name: transaction-producer
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: transactions
+    networks:
+      - fraud-detection-net
+
+  # FRAUD DETECTION CONSUMER
+  consumer:
+    build: ./consumer
+    container_name: fraud-consumer
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mlflow-server:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: transactions
+      KAFKA_FRAUD_TOPIC: fraud-alerts
+      KAFKA_GROUP_ID: fraud-detection-group
+      MLFLOW_TRACKING_URI: http://mlflow-server:5500
+    volumes:
+      - ./models:/app/models
+      - ./config.yml:/app/config.yml
+      - ./.env:/app/.env
+    networks:
+      - fraud-detection-net
+
+  # FRAUD NOTIFICATION SERVICE
+  notification:
+    build: ./notification
+    container_name: fraud-notification
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_FRAUD_TOPIC: fraud-alerts
+      KAFKA_GROUP_ID: notification-group
+    networks:
+      - fraud-detection-net
+
 volumes:
   postgres-db-volume:
   minio_data:
+  kafka-data:
 
 networks:
   fraud-detection-net:
     driver: bridge
-    

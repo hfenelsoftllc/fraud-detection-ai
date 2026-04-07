@@ -1,0 +1,74 @@
+# Fraud Detection System Configuration
+
+kafka:
+  bootstrap_servers: kafka:9092
+  topics:
+    transactions: transactions
+    fraud_alerts: fraud-alerts
+    model_metrics: model-metrics
+  consumer:
+    group_id: fraud-detection-group
+    auto_offset_reset: latest
+    enable_auto_commit: false
+    poll_timeout: 1.0
+  producer:
+    acks: all
+    compression_type: gzip
+    linger_ms: 5
+    batch_size: 16384
+    client_id: transaction-producer
+
+mlflow:
+  tracking_uri: http://mlflow-server:5500
+  experiment_name: fraud-detection
+  model_registry_name: fraud-detection-model
+  s3_endpoint_url: http://minio:9000
+  artifact_bucket: mlflow
+
+model:
+  path: /app/models/fraud_model.pkl
+  threshold: 0.5
+  min_f1_threshold: 0.70
+  retrain_schedule: "0 2 * * *" # daily at 02:00 UTC
+  n_training_samples: 100000
+  features:
+  - amount
+  - log_amount
+  - is_high_amount
+  - txn_type_encoded
+  - is_cash_withdrawal
+  - is_card_testing
+  - is_chargeback
+  - is_refund
+  - is_high_risk_merchant
+  - is_high_risk_country
+  - user_segment
+  - hour_of_day
+  - day_of_week
+  - is_weekend
+
+fraud_simulation:
+  compromised_users_count: 50
+  fraud_rate_target: 0.015
+  high_risk_merchants:
+  - QuickCash
+  - PayDay
+  - LoanShark
+  - ShadyMerchants
+  high_risk_countries:
+  - Nigeria
+  - Somalia
+  - Yemen
+  - Venezuela
+  - Afghanistan
+  - Syria
+
+monitoring:
+  max_consumer_lag: 10000
+  expected_fraud_rate_min: 0.005
+  expected_fraud_rate_max: 0.05
+  data_quality_schedule: "0 */6 * * *" # every 6 hours
+
+notification:
+  smtp_port: 587
+  alert_from_email: fraud-alerts@example.com

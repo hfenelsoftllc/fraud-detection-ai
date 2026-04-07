@@ -1,0 +1,8 @@
+confluent_kafka
+python-dotenv
+numpy
+scikit-learn
+xgboost
+lightgbm
+mlflow
+pyyaml
